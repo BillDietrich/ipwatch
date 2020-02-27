@@ -30,7 +30,10 @@ You will see reports in the command-line Terminal where you ran ipwatch.py.
 ### To system log
 Edit ipwatch.py to set gsUIChoice to "syslog".
 
-You will see reports in the system log.  For Linux, on command-line do "sudo journalctl | grep ipwatch".
+You will see reports in the system log.  For Linux, on command-line do
+```bash
+sudo journalctl | grep ipwatch
+```
 
 ---
 
@@ -39,29 +42,37 @@ You will see reports in the system log.  For Linux, on command-line do "sudo jou
 ### From command-line
 (Easiest way to start out; try this first.)
 
+```bash
 ./ipwatch.py
+```
 
 Then try steps in the "Testing" section, below.
 
 ### From a Linux systemd service started at system boot time
+```bash
 sudo cp ipwatch.py /usr/local/bin
-
-sudo edit /usr/local/bin/ipwatch.py to set gsUIChoice to "syslog".
-
+sudo edit /usr/local/bin/ipwatch.py		# to set gsUIChoice to "syslog".
 sudo cp ipwatch.service /etc/systemd/system
+```
 
-After rebooting, on command-line do "sudo journalctl | grep ipwatch". Then try steps in the "Testing" section, below, and check the journal again.
+After rebooting, on command-line do
+```bash
+sudo journalctl | grep ipwatch
+```
+Then try steps in the "Testing" section, below, and check the journal again.
 
 ---
 
 ## Additional connection to signal when network goes up/down
 (This gives faster reporting of changes.  And it works no matter how you have run ipwatch.py, from command-line or service.)
 
+```bash
 sudo cp ipwatch.netdown /etc/network/if-post-down.d
-
 sudo cp ipwatch.netup /etc/network/if-up.d
 
-sudo edit /etc/network/if-up.d/ipwatch.netup if you want to restart IPsec when network comes up (see IPsec section).
+# if you want to restart IPsec when network comes up (see IPsec section):
+sudo edit /etc/network/if-up.d/ipwatch.netup
+```
 
 ---
 
@@ -70,7 +81,10 @@ sudo edit /etc/network/if-up.d/ipwatch.netup if you want to restart IPsec when n
 ### IPsec
 If you are using a VPN with IPsec (such as strongSwan and IKEv2), sometimes the VPN connection does not get re-established if the network connection goes down and then comes back up.
 
-To fix this, un-comment the three-line "if" statement near the end of ipwatch.netup, which will restart IPsec each time the network comes up.  I recommend you do this.  sudo edit /etc/network/if-up.d/ipwatch.netup
+To fix this, un-comment the three-line "if" statement near the end of ipwatch.netup, which will restart IPsec each time the network comes up.  I recommend you do this.
+```bash
+sudo edit /etc/network/if-up.d/ipwatch.netup
+```
 
 ### No-VPN address prefix
 To give a minor tweak to the polling frequency, you could edit ipwatch.py to change the value of gsIPAddressStartNoVPN to contain the first part of your IP address from your ISP (when the VPN is not active).  Probably not worth doing.
@@ -92,9 +106,11 @@ Edit ipwatch.py, function GetIPAddressViaHTTP, array arrsSites to see and change
 ---
 
 ## Testing
-* After ipwatch.py starts (either via command-line or service), look for a report that system's public IP address has changed from "start" to some valid value such as "1.2.3.4".  Check to see if the valid value is from your ISP or your VPN.
-* Disconnect from the network, and look for a report that system's public IP address has changed from some valid value such as "1.2.3.4" to "no network connection".
-* Re-connect to the network, and look for a report that system's public IP address has changed from "no network connection" to some valid value such as "1.2.3.4".  Check to see if the valid value is from your ISP or your VPN.
+1. After ipwatch.py starts (either via command-line or service), look for a report that system's public IP address has changed from "start" to some valid value such as "1.2.3.4".  Check to see if the valid value is from your ISP or your VPN.
+2. Disconnect from the network, and look for a report that system's public IP address has changed from some valid value such as "1.2.3.4" to "no network connection".
+3. Re-connect to the network, and look for a report that system's public IP address has changed from "no network connection" to some valid value such as "1.2.3.4".  Check to see if the valid value is from your ISP or your VPN.
+
+[Would be nice to have a VPN test server that went up and down regularly, so we could test that situation.]
 
 ---
 
