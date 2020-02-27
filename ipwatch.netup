@@ -1,0 +1,39 @@
+#!/bin/sh
+
+#--------------------------------------------------------------------------------------------------
+# ipwatch.netup        Send signal to ipwatch.py when network connection comes up.
+#                       Also restart IPsec so VPN comes back up.
+#						Put this file in /etc/network/if-up.d
+
+# Copyright Bill Dietrich 2020
+
+#--------------------------------------------------------------------------------------------------
+
+echo "ipwatch.netup: called; IFACE $IFACE, ADDRFAM $ADDRFAM, METHOD $METHOD, MODE $MODE"
+#env
+# output goes into system journal
+
+#--------------------------------------------------------------------------------------------------
+
+# Send signal to watcher process, to knock it out of polling sleep,
+# so it sees the change quickly.
+pkill --signal SIGUSR1 -f ipwatch.py
+
+#--------------------------------------------------------------------------------------------------
+
+# When using StrongSwan/IPsec/IKEv2 VPN, sometimes if you lose the network
+# connection and then get it back later, the VPN does not reconnect.
+# This is dangerous; in that state you're leaking.
+# Restarting IPsec fixes the condition.
+#
+# At system startup, get IFACE --all, ADDRFAM meta.
+# If network later went down and now is coming up again,
+# get IFACE somedevicename, ADDRFAM first inet and then inet6.
+#
+# Often after down/up cycle, IPsec does not re-establish the VPN connection automatically,
+# so make it restart so it re-establishes.
+#if [ "$IFACE" != "--all" ] && [ "$ADDRFAM" = "inet" ]; then
+#    ipsec restart
+#fi
+
+#--------------------------------------------------------------------------------------------------

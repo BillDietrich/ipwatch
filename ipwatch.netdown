@@ -1,0 +1,21 @@
+#!/bin/sh
+
+#--------------------------------------------------------------------------------------------------
+# ipwatch.netdown        Send signal to ipwatch.py when network connection goes down.
+#						Put this file in /etc/network/if-post-down.d
+
+# Copyright Bill Dietrich 2020
+
+#--------------------------------------------------------------------------------------------------
+
+echo "ipwatch.netdown: called; IFACE $IFACE, ADDRFAM $ADDRFAM, METHOD $METHOD, MODE $MODE"
+#env
+# output goes into system journal
+
+#--------------------------------------------------------------------------------------------------
+
+# Send signal to watcher process, to knock it out of polling sleep,
+# so it sees the change quickly.
+pkill --signal SIGUSR1 -f ipwatch.py
+
+#--------------------------------------------------------------------------------------------------

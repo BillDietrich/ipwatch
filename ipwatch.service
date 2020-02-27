@@ -1,0 +1,24 @@
+#--------------------------------------------------------------------------------------------------
+# ipwatch.service        Run ipwatch.py when system starts, after network is up.
+#						Put this file in /etc/systemd/system
+
+# Copyright Bill Dietrich 2020
+
+#--------------------------------------------------------------------------------------------------
+
+[Unit]
+Description=IPWatch
+# would like this to start ASAP, but I think running before "online" causes problems ?
+After=network-online.target
+#After=network.target
+Before=graphical.target
+Before=multi-user.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/ipwatch.py
+
+[Install]
+WantedBy=multi-user.target
+
+#--------------------------------------------------------------------------------------------------
