@@ -16,23 +16,9 @@
 
 #--------------------------------------------------------------------------------------------------
 
-import subprocess
-import sys
-import signal       # https://docs.python.org/3/library/signal.html
-import time         # https://www.cyberciti.biz/faq/howto-get-current-date-time-in-python/
-import requests
-import syslog       # https://docs.python.org/2/library/syslog.html
-
-#import dns.resolver    # un-comment this if you want gsAccessType = 'DNS'
-# and do "apt install python-dnspython" or "pip3 install dnspython"
-#
-# And to run this script with DNS and as a service, you must do "sudo -H pip3 install dnspython"
-# so this package gets installed for root user too.
-
-
-#--------------------------------------------------------------------------------------------------
-
 # edit these to change the behavior of the app
+
+gbOSLinux = True
 
 gsAccessType = 'HTTP'         # HTTP or DNS
 
@@ -46,6 +32,34 @@ gsIPAddressStartNoVPN = 'zzz.'
 
 #--------------------------------------------------------------------------------------------------
 
+gbOSWindows = not gbOSLinux
+
+import subprocess
+import sys
+import signal       # https://docs.python.org/3/library/signal.html
+import time         # https://www.cyberciti.biz/faq/howto-get-current-date-time-in-python/
+import requests
+
+# for Linux:
+if gbOSLinux:
+    import syslog       # https://docs.python.org/2/library/syslog.html
+
+# for Windows 10:
+if gbOSWindows:
+    import win32evtlogutil
+    import win32evtlog
+    # and do "pip install pywin32"
+
+if gsAccessType == 'DNS':
+    import dns.resolver
+    # and do "apt install python-dnspython" or "pip3 install dnspython"
+    #
+    # And to run this script with DNS and as a service, you must do "sudo -H pip3 install dnspython"
+    # so this package gets installed for root user too.
+
+
+#--------------------------------------------------------------------------------------------------
+
 # state variables
 
 gsConnectionState = 'none'    # none or 'rejected by site' or connected
@@ -54,6 +68,8 @@ gsOldIPAddress = 'start'    # start or 'internal error' or 'no network connectio
 
 gnSleep = 0
 
+
+#--------------------------------------------------------------------------------------------------
 
 # getting extremely precise timestamps:
 # https://stackoverflow.com/questions/38319606/how-to-get-millisecond-and-microsecond-resolution-timestamps-in-python
@@ -171,35 +187,75 @@ def GetIPAddressViaHTTP():
 
 def GetAddress():
 
-    global gsConnectionState
-    global gsUIChoice
-    global gsOldIPAddress
+    global gsAccessType
 
     if gsAccessType == 'HTTP':
         sNewIPAddress = GetIPAddressViaHTTP()
     else:
         sNewIPAddress = GetIPAddressViaDNS()
 
-    if gsOldIPAddress == sNewIPAddress:
-        return
+    return sNewIPAddress
+
+
+#--------------------------------------------------------------------------------------------------
+
+def ReportChange(sNewIPAddress):
+
+    global gsConnectionState
+    global gsUIChoice
+    global gsOldIPAddress
 
     sMsg = ('Public IP address changed from "'+gsOldIPAddress+'" to "'+sNewIPAddress+'"')
-    gsOldIPAddress = sNewIPAddress
 
     if 'stdout' in gsUIChoice:
+
         print(time.strftime("%H:%M:%S")+': '+sMsg)
+
     if 'notification' in gsUIChoice:
-        # open a modal dialog, so no more checking until user sees the dialog and closes it
-        #    subprocess.call(['zenity','--info','--text',sMsg])
-        # add a (non-modal) notification in the system tray, so no wait for user action
-        subprocess.call(['zenity','--notification','--text',sMsg])
-        # on Linux, see output as notifications in system tray
+
+        # for Linux Mint, no installation needed, Zenity is installed by default.
+
+        # For Win10, https://github.com/maravento/winzenity
+        # Download https://github.com/maravento/winzenity/raw/master/zenity.zip
+        # and run the installer inside it.
+
+        # https://www.linux.org/threads/zenity-gui-for-shell-scripts.9802/
+        # https://en.wikipedia.org/wiki/Zenity
+
+        if gbOSLinux:
+            # do a (non-modal) notification, so no wait for user action
+            subprocess.call(['zenity','--notification','--text',sMsg])
+            # on Linux, see output as notifications in system tray
+
+        if gbOSWindows:
+            # only modal-dialog choices are available with WinZenity
+            # open a modal dialog, so no more checking until user sees the dialog and closes it
+            subprocess.call(['zenity','--info','--text',sMsg])
+
     if 'syslog' in gsUIChoice:
-        syslog.syslog(sMsg)
-        # on Linux, see output:
-        #   sudo journalctl --pager-end
-        # or
-        #   sudo journalctl | grep ipwatch
+
+        if gbOSLinux:
+            syslog.syslog(sMsg)
+            # on Linux, to see output:
+            #   sudo journalctl --pager-end
+            # or
+            #   sudo journalctl | grep ipwatch
+
+        if gbOSWindows:
+            # https://stackoverflow.com/questions/51385195/writing-to-windows-event-log-using-win32evtlog-from-pywin32-library
+            # https://www.programcreek.com/python/example/96660/win32evtlogutil.ReportEvent
+            # https://docs.microsoft.com/en-us/windows/win32/eventlog/event-logging-elements
+            win32evtlogutil.ReportEvent(
+                                        "ipwatch",
+                                        #7040,       # event ID  # https://www.rapidtables.com/convert/number/decimal-to-binary.html
+                                        1610612737,  # event ID  # https://www.rapidtables.com/convert/number/decimal-to-binary.html
+                                        eventCategory=1,
+                                        eventType=win32evtlog.EVENTLOG_INFORMATION_TYPE,
+                                        strings=[sMsg],
+                                        data=b"")
+            # https://rosettacode.org/wiki/Write_to_Windows_event_log#Python
+            # on Win10, to see output:
+            # run Event Viewer application.
 
 
 #--------------------------------------------------------------------------------------------------
@@ -223,21 +279,29 @@ if __name__ == '__main__':
     #    monitor_frequency = argv[1]
 
     # Not sure why this is needed, but it is, otherwise signal will make process exit.
-    signal.signal(signal.SIGUSR1, handler)
+    if gbOSLinux:
+        signal.signal(signal.SIGUSR1, handler)
 
     while True:
 
-        GetAddress()
+        sNewIPAddress = GetAddress()
+
+        if gsOldIPAddress != sNewIPAddress:
+            ReportChange(sNewIPAddress)
+            gsOldIPAddress = sNewIPAddress
 
         try:
             #print('sleep for '+str(gnSleep))
             # SIGUSR1 == 10 in major archs
             # pkill --signal SIGUSR1 -f ipwatch.py
-            objSignal = signal.sigtimedwait({signal.SIGUSR1}, gnSleep)
-            #if objSignal == None:
-                #print('sleep timed out')
-            #else:
-                #print('received signal '+str(objSignal.si_signo))
+            if gbOSLinux:
+                objSignal = signal.sigtimedwait({signal.SIGUSR1}, gnSleep)
+                #if objSignal == None:
+                    #print('sleep timed out')
+                #else:
+                    #print('received signal '+str(objSignal.si_signo))
+            if gbOSWindows:
+                time.sleep(gnSleep)
         except KeyboardInterrupt:
             sys.exit()
         #except InterruptedError as objE:

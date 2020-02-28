@@ -3,7 +3,7 @@ Reports when your system's public IP address changes.
 
 Intended to reveal when your VPN is up or down, so you can have some confidence that it's actually working.
 
-Tested only on Linux Mint 19.
+Tested only on Linux Mint 19 and Windows 10 Home.
 
 https://github.com/BillDietrich/ipwatch
 
@@ -11,7 +11,66 @@ There are many other similar projects in GitHub.  This one is a little different
 
 ---
 
-## Ways it can report IP address changes
+## Basic installation
+
+### Requires Python 3.3+
+#### On Linux
+```bash
+# See what is installed
+python3 --version
+
+# If it's not installed:
+# On Debian-type Linux:
+sudo apt-get update
+sudo apt-get install python3
+```
+
+#### On Windows 10
+Open windows command prompt: Win+X and then choose "Command Shell (as Administrator)".
+
+Type "python -V"
+
+If Python is not installed:
+
+1. Go to https://www.python.org/downloads/windows/
+2. Download installer (EXE).
+3. Run the installer.
+4. In the installer, check the checkboxes "Installer launcher for all users" and "Add Python 3 to PATH" before you click on the Install button.
+5. Near end of installation, click on "Disable limit on PATH length".
+6. After installer finishes, open windows command prompt (Win+X and then choose "Command Shell (as Administrator)") and type "python -V" to verify the installation.
+7. pip install requests
+8. pip install pywin32
+
+### Edit ipwatch.py
+#### On Linux
+No edits needed in ipwatch.py
+
+Default is to use HTTP requests, and report via desktop notifications.
+
+#### On Windows 10
+Edit ipwatch.py to:
+* Change the line "gbOSLinux = True" to "gbOSLinux = False".
+* Change the line "gsUIChoice = 'notification'" to "gsUIChoice = 'stdout'".
+
+---
+
+## Quick-start to try ipwatch: run it manually
+
+### On Linux command-line
+```bash
+./ipwatch.py
+```
+
+See desktop notifications.
+
+### On Windows 10
+Double-click on ipwatch.cmd file.
+
+See output in the text window.
+
+---
+
+## Ways ipwatch can report IP address changes
 
 You can choose one or more of the following:
 
@@ -20,33 +79,50 @@ You can choose one or more of the following:
 
 Edit ipwatch.py to set gsUIChoice to "notification".
 
-You will see notifications in the Linux system tray, or wherever your desktop displays notifications.
+You will see notifications on the desktop.  Notifications are non-modal on Linux (ipwatch keeps going without waiting for user to do anything), but modal on Windows 10 (a modal dialog is displayed and ipwatch waits until user closes the dialog).
+
+To use on Linux, Zenity must be installed (it's installed by default on Mint).  To see if it is installed, on command-line run "zenity --version".
+
+To use on Win10, download https://github.com/maravento/winzenity/raw/master/zenity.zip and copy the EXE file inside it to the same folder where ipwatch.py is located.
 
 ### To stdout
 Edit ipwatch.py to set gsUIChoice to "stdout".
 
-You will see reports in the command-line Terminal where you ran ipwatch.py.
+You will see reports in the command-line window where you ran ipwatch.py.
 
 ### To system log
 Edit ipwatch.py to set gsUIChoice to "syslog".
 
-You will see reports in the system log.  For Linux, on command-line do
+To use on Win10, do "pip install pywin32".
+
+You will see reports in the system log:
+
+For Linux, on command-line do
 ```bash
 sudo journalctl | grep ipwatch
 ```
+
+For Win10, run Event Viewer application.  Look in administrative events from Applications, and look for events with Origin "ipwatch".
 
 ---
 
 ## Ways to run ipwatch
 
-### From command-line
+### Run the program manually
 (Easiest way to start out; try this first.)
 
+#### On Linux command-line
 ```bash
 ./ipwatch.py
 ```
 
 Then try steps in the "Testing" section, below.
+
+#### On Windows 10
+Double-click on ipwatch.cmd file.
+
+Then try steps in the "Testing" section, below.
+
 
 ### From a Linux systemd service started at system boot time
 ```bash
@@ -63,16 +139,16 @@ Then try steps in the "Testing" section, below, and check the journal again.
 
 ---
 
-## Additional connection to signal when network goes up/down
+## Additional connection to signal when network goes up/down (Linux only)
 (This gives faster reporting of changes.  And it works no matter how you have run ipwatch.py, from command-line or service.)
 
 ```bash
 sudo cp ipwatchnetdown /etc/network/if-post-down.d
 sudo cp ipwatchnetup /etc/network/if-up.d
 
-# if you want to restart IPsec when network comes up (see IPsec section):
+# If you want to restart IPsec when network comes up (see IPsec section):
 sudo edit /etc/network/if-up.d/ipwatchnetup
-# un-comment the three-line "if" statement near the end
+# Un-comment the three-line "if" statement near the end
 ```
 
 ---
@@ -117,7 +193,7 @@ Edit ipwatch.py, function GetIPAddressViaHTTP, array arrsSites to see and change
 
 ## Limitations
 * Does polling.  Can't poll too frequently, or else it would slow down the system and maybe violate TOS on the web site that it fetches the IP address from.  So it's possible to miss brief, transient changes.  And a change of address may be reported as much as 60 or 120 seconds after it actually happens.
-* Tested only on Linux Mint 19.3 Cinnamon with 5.3 kernel.
+* Tested only on Linux Mint 19.3 Cinnamon with 5.3 kernel, and Windows 10 Home.
 * Tested only with IPv4, not IPv6.
 * Tested only with strongSwan/IPsec to Windscribe VPN.
 * Not tested on a LAN with no internet access.
@@ -129,4 +205,4 @@ Edit ipwatch.py, function GetIPAddressViaHTTP, array arrsSites to see and change
 ---
 
 ## Privacy Policy
-This code doesn't collect, store or transmit anyone's identity or personal information in any way.  It does not modify or transmit your system's data outside your system in any way.
+This code doesn't collect, store, process, or transmit anyone's identity or personal information in any way.  It does not modify or transmit your system's data outside your system in any way.

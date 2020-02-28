@@ -1,0 +1,3 @@
+python ./ipwatch.py
+pause
+
