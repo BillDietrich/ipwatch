@@ -1,7 +1,7 @@
 #!/bin/sh
 
 #--------------------------------------------------------------------------------------------------
-# ipwatch.netup        Send signal to ipwatch.py when network connection comes up.
+# ipwatchnetup        Send signal to ipwatch.py when network connection comes up.
 #                       Also restart IPsec so VPN comes back up.
 #						Put this file in /etc/network/if-up.d
 
@@ -9,7 +9,7 @@
 
 #--------------------------------------------------------------------------------------------------
 
-echo "ipwatch.netup: called; IFACE $IFACE, ADDRFAM $ADDRFAM, METHOD $METHOD, MODE $MODE"
+echo "ipwatchnetup: called; IFACE $IFACE, ADDRFAM $ADDRFAM, METHOD $METHOD, MODE $MODE"
 #env
 # output goes into system journal
 

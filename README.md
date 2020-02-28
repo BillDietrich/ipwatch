@@ -67,11 +67,12 @@ Then try steps in the "Testing" section, below, and check the journal again.
 (This gives faster reporting of changes.  And it works no matter how you have run ipwatch.py, from command-line or service.)
 
 ```bash
-sudo cp ipwatch.netdown /etc/network/if-post-down.d
-sudo cp ipwatch.netup /etc/network/if-up.d
+sudo cp ipwatchnetdown /etc/network/if-post-down.d
+sudo cp ipwatchnetup /etc/network/if-up.d
 
 # if you want to restart IPsec when network comes up (see IPsec section):
-sudo edit /etc/network/if-up.d/ipwatch.netup
+sudo edit /etc/network/if-up.d/ipwatchnetup
+# un-comment the three-line "if" statement near the end
 ```
 
 ---
@@ -81,9 +82,9 @@ sudo edit /etc/network/if-up.d/ipwatch.netup
 ### IPsec
 If you are using a VPN with IPsec (such as strongSwan and IKEv2), sometimes the VPN connection does not get re-established if the network connection goes down and then comes back up.
 
-To fix this, un-comment the three-line "if" statement near the end of ipwatch.netup, which will restart IPsec each time the network comes up.  I recommend you do this.
+To fix this, un-comment the three-line "if" statement near the end of ipwatchnetup, which will restart IPsec each time the network comes up.  I recommend you do this.
 ```bash
-sudo edit /etc/network/if-up.d/ipwatch.netup
+sudo edit /etc/network/if-up.d/ipwatchnetup
 ```
 
 ### No-VPN address prefix

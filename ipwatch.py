@@ -98,7 +98,7 @@ def GetIPAddressViaDNS():
             gsConnectionState = 'connected'
             if sIPAddress.startswith(gsIPAddressStartNoVPN):
                 gnSleep = 60
-            else
+            else:
                 gnSleep = 120
     except exception as objE:
         print('exception "'+str(objE)+'"')
@@ -152,7 +152,7 @@ def GetIPAddressViaHTTP():
             gsConnectionState = 'connected'
             if sIPAddress.startswith(gsIPAddressStartNoVPN):
                 gnSleep = 60
-            else
+            else:
                 gnSleep = 120
     except requests.exceptions.RequestException as objE:
         # print('request exception "'+str(objE)+'"')
