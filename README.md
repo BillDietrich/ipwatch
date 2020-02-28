@@ -13,6 +13,14 @@ There are many other similar projects in GitHub.  This one is a little different
 
 ## Basic installation
 
+### Copy the minimal files to disk
+In the GitHub repo, click the "Clone or download" button, then click the "Download ZIP" button.  Save the ZIP file to disk.
+#### On Linux
+Copy file ipwatch.py from the ZIP file to /usr/local/bin
+
+#### On Windows 10
+Copy files ipwatch.cmd and ipwatch.py from the ZIP file to some folder.
+
 ### Requires Python 3.3+
 #### On Linux
 ```bash
@@ -58,7 +66,7 @@ Edit ipwatch.py to:
 
 ### On Linux command-line
 ```bash
-./ipwatch.py
+ipwatch.py
 ```
 
 See desktop notifications.
@@ -81,7 +89,7 @@ Edit ipwatch.py to set gsUIChoice to "notification".
 
 You will see notifications on the desktop.  Notifications are non-modal on Linux (ipwatch keeps going without waiting for user to do anything), but modal on Windows 10 (a modal dialog is displayed and ipwatch waits until user closes the dialog).
 
-To use on Linux, Zenity must be installed (it's installed by default on Mint).  To see if it is installed, on command-line run "zenity --version".
+To use on Linux, Zenity must be installed (it's installed by default on Mint 19).  To see if it is installed, on command-line run "zenity --version".
 
 To use on Win10, download https://github.com/maravento/winzenity/raw/master/zenity.zip and copy the EXE file inside it to the same folder where ipwatch.py is located.
 
@@ -113,7 +121,7 @@ For Win10, run Event Viewer application.  Look in administrative events from App
 
 #### On Linux command-line
 ```bash
-./ipwatch.py
+ipwatch.py
 ```
 
 Then try steps in the "Testing" section, below.
@@ -126,7 +134,7 @@ Then try steps in the "Testing" section, below.
 
 ### From a Linux systemd service started at system boot time
 ```bash
-sudo cp ipwatch.py /usr/local/bin
+sudo cp ipwatch.py /usr/local/bin		# you may have done this already
 sudo edit /usr/local/bin/ipwatch.py		# to set gsUIChoice to "syslog".
 sudo cp ipwatch.service /etc/systemd/system
 ```
@@ -155,7 +163,7 @@ sudo edit /etc/network/if-up.d/ipwatchnetup
 
 ## Additional configuration
 
-### IPsec
+### IPsec (Linux only)
 If you are using a VPN with IPsec (such as strongSwan and IKEv2), sometimes the VPN connection does not get re-established if the network connection goes down and then comes back up.
 
 To fix this, un-comment the three-line "if" statement near the end of ipwatchnetup, which will restart IPsec each time the network comes up.  I recommend you do this.
@@ -201,6 +209,10 @@ Edit ipwatch.py, function GetIPAddressViaHTTP, array arrsSites to see and change
 * Only the first site in arrsSites is used to fetch IP address.
 * Can't really guarantee that at boot time this service will report the public IP address before any other service does any internet access.  So it really can't give 100% assurance that there is no IP leak before the VPN starts up.
 * Can't guarantee that quick, transient changes in the public IP address will be detected.  So it really can't give 100% assurance that there is no IP leak caused by brief faults in the VPN.
+
+## To-Do
+* Any way to run as service on Win10 ?
+* Any way to get a signal about network going down/up on Win10 ?
 
 ---
 
