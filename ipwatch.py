@@ -22,7 +22,7 @@ gbOSLinux = True
 
 gsAccessType = 'HTTP'         # HTTP or DNS
 
-gsUIChoice = 'notification'         # one or more of: notification syslog stdout
+gsUIChoice = 'notification'   # one or more of: notification syslog stdout
 
 # If VPN is down and we're leaking, IP address will start with this.
 # In that case, poll a little faster.
@@ -51,6 +51,8 @@ if gbOSWindows:
     import win32evtlogutil
     import win32evtlog
     # and do "pip install pywin32"
+    from plyer import notification      # https://plyer.readthedocs.io/en/latest/#
+    # and do "pip install plyer"
 
 if gsAccessType == 'DNS':
     import dns.resolver
@@ -219,7 +221,7 @@ def ReportChange(sNewIPAddress):
 
         # For Win10, https://github.com/maravento/winzenity
         # Download https://github.com/maravento/winzenity/raw/master/zenity.zip
-        # and run the installer inside it.
+        # and copy the EXE file inside it to the same folder where ipwatch.py is located..
 
         # https://www.linux.org/threads/zenity-gui-for-shell-scripts.9802/
         # https://en.wikipedia.org/wiki/Zenity
@@ -232,17 +234,11 @@ def ReportChange(sNewIPAddress):
         if gbOSWindows:
             # only modal-dialog choices are available with WinZenity
             # open a modal dialog, so no more checking until user sees the dialog and closes it
-            subprocess.call(['zenity','--info','--text',sMsg])
-
-            # or use "action center" ?
-            # https://support.microsoft.com/en-us/help/4028116/windows-10-find-action-center-in-windows-10
-            # https://www.howtogeek.com/223503/how-to-use-and-configure-the-new-notification-center-in-windows-10/
-
-            # is "toast" same as "action center" ?
-            # https://www.geeksforgeeks.org/windows-10-toast-notifications-with-python/
+            #subprocess.call(['zenity','--info','--text',sMsg])
 
             # https://plyer.readthedocs.io/en/latest/#
             # https://github.com/kivy/plyer
+            notification.notify(title='IP address changed', message=sMsg, app_name='ipwatch', timeout=8*60*60)
 
     if 'syslog' in gsUIChoice:
 

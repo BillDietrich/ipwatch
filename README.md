@@ -7,7 +7,7 @@ Tested only on Linux Mint 19 and Windows 10 Home.
 
 https://github.com/BillDietrich/ipwatch
 
-There are many other similar projects in GitHub.  This one is a little different in that it should be fairly portable, and also supports reporting via system log and stdout and desktop notifications.  Some others maybe aren't so portable, or only report to specific email or messaging systems.  Also, this one supports automatically restarting IPsec when the network goes down and then comes back up.
+There are many other similar projects in GitHub.  This one is a little different in that it works on both Linux and Win10, and also supports reporting via system log and stdout and desktop notifications.  Some others are Linux-only, or only report to specific email or messaging systems.  Also, on Linux this supports automatically restarting IPsec when the network goes down and then comes back up.
 
 ---
 
@@ -46,19 +46,20 @@ If Python is not installed:
 4. In the installer, check the checkboxes "Installer launcher for all users" and "Add Python 3 to PATH" before you click on the Install button.
 5. Near end of installation, click on "Disable limit on PATH length".
 6. After installer finishes, open windows command prompt (Win+X and then choose "Command Shell (as Administrator)") and type "python -V" to verify the installation.
-7. pip install requests
-8. pip install pywin32
+
+With Python installed:
+
+1. pip install requests
+2. pip install pywin32
+3. pip install plyer
 
 ### Edit ipwatch.py
 #### On Linux
 No edits needed in ipwatch.py
 
-Default is to use HTTP requests, and report via desktop notifications.
-
 #### On Windows 10
 Edit ipwatch.py to:
 * Change the line "gbOSLinux = True" to "gbOSLinux = False".
-* Change the line "gsUIChoice = 'notification'" to "gsUIChoice = 'stdout'".
 
 ---
 
@@ -74,7 +75,7 @@ See desktop notifications.
 ### On Windows 10
 Double-click on ipwatch.cmd file.
 
-See output in the text window.
+See notifications in "action center" at right end of system tray.
 
 ---
 
@@ -87,11 +88,11 @@ You can choose one or more of the following:
 
 Edit ipwatch.py to set gsUIChoice to "notification".
 
-You will see notifications on the desktop.  Notifications are non-modal on Linux (ipwatch keeps going without waiting for user to do anything), but modal on Windows 10 (a modal dialog is displayed and ipwatch waits until user closes the dialog).
+You will see notifications on the desktop or in the "action center".
 
 To use on Linux, Zenity must be installed (it's installed by default on Mint 19).  To see if it is installed, on command-line run "zenity --version".
 
-To use on Win10, download https://github.com/maravento/winzenity/raw/master/zenity.zip and copy the EXE file inside it to the same folder where ipwatch.py is located.
+To use on Win10, do "pip install plyer".
 
 ### To stdout
 Edit ipwatch.py to set gsUIChoice to "stdout".
@@ -105,12 +106,12 @@ To use on Win10, do "pip install pywin32".
 
 You will see reports in the system log:
 
-For Linux, on command-line do
+For Linux, to see output, on command-line do
 ```bash
 sudo journalctl | grep ipwatch
 ```
 
-For Win10, run Event Viewer application.  Look in administrative events from Applications, and look for events with Origin "ipwatch".
+For Win10, to see output, run Event Viewer application.  Look in administrative events from Applications, and look for events with Origin "ipwatch".
 
 ---
 
@@ -131,8 +132,9 @@ Double-click on ipwatch.cmd file.
 
 Then try steps in the "Testing" section, below.
 
+### Run the program automatically
 
-### From a Linux systemd service started at system boot time
+#### From a Linux systemd service started at system boot time
 ```bash
 sudo cp ipwatch.py /usr/local/bin		# you may have done this already
 sudo edit /usr/local/bin/ipwatch.py		# to set gsUIChoice to "syslog".
@@ -144,6 +146,20 @@ After rebooting, on command-line do
 sudo journalctl | grep ipwatch
 ```
 Then try steps in the "Testing" section, below, and check the journal again.
+
+#### From a Windows 10 task started when you log in
+
+1. Go to Control Panel / Administrative Tools / Program Tasks.
+2. In Actions (rightmost pane), click on Local Tasks / Create Basic Task.
+3. Set Name of Task to "ipwatch" (not mandatory, just for clarity).
+4. Set various fields.
+5. For "When do you want to run the task ?" select "At start of session".
+6. For "What action do you want to take for this task ?" select "Run a program".
+7. For "Program or Script" select the ipwatch.cmd file.
+8. Save the task.
+9. The task will appear in the list of Active Tasks (bottom of middle pane).
+10. Log out and back in.
+11. ipwatch should report an IP address change, in whatever way it's configured to report.
 
 ---
 
