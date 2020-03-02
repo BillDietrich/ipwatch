@@ -177,6 +177,8 @@ To give a minor tweak to the polling frequency, you could edit ipwatch.py to cha
 ### DNS accesses
 You could edit ipwatch.py to make the IP address be retrieved using DNS accesses instead of HTTP accesses.  I don't recommend you do this.
 
+#### On Linux
+
 To use DNS accesses, you must:
 * pip3 install dnspython
 * Edit ipwatch.py to un-comment the line "import dns.resolver"
@@ -184,6 +186,10 @@ To use DNS accesses, you must:
 
 If you want to use DNS accesses AND run as a service, you must also:
 * sudo -H pip3 install dnspython
+
+#### On Windows 10
+
+???
 
 ### Sites to fetch IP address from
 Edit ipwatch.py, function GetIPAddressViaHTTP, array arrsSites to see and change the web site the IP address is fetched from.  This should be necessary only if the default site stops working for some reason.

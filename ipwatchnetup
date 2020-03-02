@@ -17,7 +17,12 @@ echo "ipwatchnetup: called; IFACE $IFACE, ADDRFAM $ADDRFAM, METHOD $METHOD, MODE
 
 # Send signal to watcher process, to knock it out of polling sleep,
 # so it sees the change quickly.
-pkill --signal SIGUSR1 -f ipwatch.py
+# Only send signal if the "alive" file exists, which tells us
+# that the watcher process is past its startup phase, otherwise
+# a signal would make it exit.
+if [ -f /tmp/ipwatch ]; then
+	pkill --signal SIGUSR1 -f ipwatch.py
+fi
 
 #--------------------------------------------------------------------------------------------------
 

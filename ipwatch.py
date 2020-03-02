@@ -39,10 +39,12 @@ import sys
 import signal       # https://docs.python.org/3/library/signal.html
 import time         # https://www.cyberciti.biz/faq/howto-get-current-date-time-in-python/
 import requests
+import os           # https://docs.python.org/3/library/os.html
 
 # for Linux:
 if gbOSLinux:
     import syslog       # https://docs.python.org/2/library/syslog.html
+    gsAliveFilename = "/tmp/ipwatch"
 
 # for Windows 10:
 if gbOSWindows:
@@ -232,6 +234,16 @@ def ReportChange(sNewIPAddress):
             # open a modal dialog, so no more checking until user sees the dialog and closes it
             subprocess.call(['zenity','--info','--text',sMsg])
 
+            # or use "action center" ?
+            # https://support.microsoft.com/en-us/help/4028116/windows-10-find-action-center-in-windows-10
+            # https://www.howtogeek.com/223503/how-to-use-and-configure-the-new-notification-center-in-windows-10/
+
+            # is "toast" same as "action center" ?
+            # https://www.geeksforgeeks.org/windows-10-toast-notifications-with-python/
+
+            # https://plyer.readthedocs.io/en/latest/#
+            # https://github.com/kivy/plyer
+
     if 'syslog' in gsUIChoice:
 
         if gbOSLinux:
@@ -278,9 +290,12 @@ if __name__ == '__main__':
     #else:
     #    monitor_frequency = argv[1]
 
-    # Not sure why this is needed, but it is, otherwise signal will make process exit.
     if gbOSLinux:
+        # Not sure why this is needed, but it is, otherwise signal will make process exit.
         signal.signal(signal.SIGUSR1, handler)
+        # Create file to tell ipwatchnetup that it can send signals to us now.
+        # If we allowed it to send signal before this point, a signal would make this app exit.
+        fileAlive = open(gsAliveFilename, 'w+')
 
     while True:
 
@@ -297,12 +312,18 @@ if __name__ == '__main__':
             if gbOSLinux:
                 objSignal = signal.sigtimedwait({signal.SIGUSR1}, gnSleep)
                 #if objSignal == None:
-                    #print('sleep timed out')
+                #   print('sleep timed out')
                 #else:
-                    #print('received signal '+str(objSignal.si_signo))
+                #   print('received signal '+str(objSignal.si_signo))
             if gbOSWindows:
                 time.sleep(gnSleep)
         except KeyboardInterrupt:
+            if gbOSLinux:
+                fileAlive.close()
+                try:
+                    os.remove(gsAliveFilename)
+                except:
+                    i = 1   # placeholder
             sys.exit()
         #except InterruptedError as objE:
             #print('sigtimedwait exception "'+str(objE)+'"')

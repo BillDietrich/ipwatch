@@ -17,6 +17,7 @@ Before=multi-user.target
 [Service]
 Type=simple
 ExecStart=/usr/local/bin/ipwatch.py
+ExecStop=/bin/rm -f /tmp/ipwatch
 
 [Install]
 WantedBy=multi-user.target
