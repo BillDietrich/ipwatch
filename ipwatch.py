@@ -45,6 +45,8 @@ import os           # https://docs.python.org/3/library/os.html
 if gbOSLinux:
     import syslog       # https://docs.python.org/2/library/syslog.html
     gsAliveFilename = "/tmp/ipwatch"
+    from plyer import notification      # https://plyer.readthedocs.io/en/latest/#
+    # and do "pip install plyer"
 
 # for Windows 10:
 if gbOSWindows:
@@ -228,8 +230,11 @@ def ReportChange(sNewIPAddress):
 
         if gbOSLinux:
             # do a (non-modal) notification, so no wait for user action
-            subprocess.call(['zenity','--notification','--text',sMsg])
+            #subprocess.call(['zenity','--notification','--text',sMsg])
             # on Linux, see output as notifications in system tray
+            
+            # plyer works a little better, IMO: notifications appear both on desktop (briefly) and in tray
+            notification.notify(title='IP address changed', message=sMsg, app_name='ipwatch', timeout=8*60*60)
 
         if gbOSWindows:
             # only modal-dialog choices are available with WinZenity

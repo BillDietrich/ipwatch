@@ -31,6 +31,9 @@ python3 --version
 # On Debian-type Linux:
 sudo apt-get update
 sudo apt-get install python3
+
+# After python is installed:
+pip3 install plyer
 ```
 
 #### On Windows 10
@@ -90,10 +93,6 @@ Edit ipwatch.py to set gsUIChoice to "notification".
 
 You will see notifications on the desktop or in the "action center".
 
-To use on Linux, Zenity must be installed (it's installed by default on Mint 19).  To see if it is installed, on command-line run "zenity --version".
-
-To use on Win10, do "pip install plyer".
-
 ### To stdout
 Edit ipwatch.py to set gsUIChoice to "stdout".
 
@@ -101,8 +100,6 @@ You will see reports in the command-line window where you ran ipwatch.py.
 
 ### To system log
 Edit ipwatch.py to set gsUIChoice to "syslog".
-
-To use on Win10, do "pip install pywin32".
 
 You will see reports in the system log:
 
