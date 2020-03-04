@@ -160,27 +160,15 @@ Then try steps in the "Testing" section, below, and check the journal again.
 
 ---
 
-## Additional connection to signal when network goes up/down (Linux only)
-(This gives faster reporting of changes.  And it works no matter how you have run ipwatch.py, from command-line or service.)
-
-```bash
-sudo cp ipwatchnetdown /etc/network/if-post-down.d
-sudo cp ipwatchnetup /etc/network/if-up.d
-
-# If you want to restart IPsec when network comes up (see IPsec section):
-sudo edit /etc/network/if-up.d/ipwatchnetup
-# Un-comment the three-line "if" statement near the end
-```
-
----
-
 ## Additional configuration
 
 ### IPsec (Linux only)
 If you are using a VPN with IPsec (such as strongSwan and IKEv2), sometimes the VPN connection does not get re-established if the network connection goes down and then comes back up.
 
-To fix this, un-comment the three-line "if" statement near the end of ipwatchnetup, which will restart IPsec each time the network comes up.  I recommend you do this.
+To fix this, install ipwatchnetup and ipwatchnetdown and un-comment the three-line "if" statement near the end of ipwatchnetup, which will restart IPsec each time the network comes up.  I recommend you do this.
 ```bash
+sudo cp ipwatchnetdown /etc/network/if-post-down.d
+sudo cp ipwatchnetup /etc/network/if-up.d
 sudo edit /etc/network/if-up.d/ipwatchnetup
 ```
 
@@ -192,7 +180,7 @@ You could edit ipwatch.py to make the IP address be retrieved using DNS accesses
 
 #### On Linux
 
-To use DNS accesses, you must:
+To use DNS accesses (not recommended), you must:
 * pip3 install dnspython
 * Edit ipwatch.py to un-comment the line "import dns.resolver"
 * Edit ipwatch.py to set gsAccessType to "DNS"
@@ -205,7 +193,7 @@ If you want to use DNS accesses AND run as a service, you must also:
 ???
 
 ### Sites to fetch IP address from
-Edit ipwatch.py, function GetIPAddressViaHTTP, array arrsSites to see and change the web site the IP address is fetched from.  This should be necessary only if the default site stops working for some reason.
+Edit ipwatch.py, function GetIPAddressViaHTTP, array arrsSites to see and change the web sites the IP address is fetched from.  This should be necessary only if some site stops working for some reason.
 
 ---
 
@@ -219,19 +207,19 @@ Edit ipwatch.py, function GetIPAddressViaHTTP, array arrsSites to see and change
 ---
 
 ## Limitations
-* Does polling.  Can't poll too frequently, or else it would slow down the system and maybe violate TOS on the web site that it fetches the IP address from.  So it's possible to miss brief, transient changes.  And a change of address may be reported as much as 60 or 120 seconds after it actually happens.
+* Does polling on Windows.  Can't poll too frequently, or else it would slow down the system and maybe violate TOS on the web site that it fetches the IP address from.  So it's possible to miss brief, transient changes.  And a change of address may be reported as much as 60 or 120 seconds after it actually happens.
 * Tested only on Linux Mint 19.3 Cinnamon with 5.3 kernel, and Windows 10 Home.
 * Tested only with IPv4, not IPv6.
-* Tested only with strongSwan/IPsec to Windscribe VPN.
+* On Linux, tested only with strongSwan/IPsec to Windscribe VPN.
+* On Win10, tested only without VPN.
 * Not tested on a LAN with no internet access.
 * Requires Python 3.3 or greater.
-* Only the first site in arrsSites is used to fetch IP address.
 * Can't really guarantee that at boot time this service will report the public IP address before any other service does any internet access.  So it really can't give 100% assurance that there is no IP leak before the VPN starts up.
 * Can't guarantee that quick, transient changes in the public IP address will be detected.  So it really can't give 100% assurance that there is no IP leak caused by brief faults in the VPN.
 
 ## To-Do
-* Any way to run as service on Win10 ?
-* Any way to get a signal about network going down/up on Win10 ?
+* Any way to stop polling on Win10 ?
+* In Linux with VPN, when you unplug the Ethernet cable, the socket notifies right away.  But then trying to fetch the IP address takes a long time (8-10 seconds) to time out, even with a short timeout specified in the app.  Not sure if the delay is in the VPN or somewhere else.  So the app feels very slow.  Not sure if it happens in other configurations too.
 
 ---
 

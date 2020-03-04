@@ -11,6 +11,9 @@
 # on Linux, to see if app is running in background:
 #   sudo ps -ax | grep ipwatch
 
+# There's a lot of commented-out code in here, because I tried various methods of
+# polling and signals and such before getting to the final (well, latest) state.
+
 # Copyright Bill Dietrich 2020
 
 
@@ -34,11 +37,12 @@ gsIPAddressStartNoVPN = 'zzz.'
 
 gbOSWindows = not gbOSLinux
 
-import subprocess
+#import subprocess
 import sys
-import signal       # https://docs.python.org/3/library/signal.html
+#import signal       # https://docs.python.org/3/library/signal.html
 import time         # https://www.cyberciti.biz/faq/howto-get-current-date-time-in-python/
 import requests
+import ipaddress
 import os           # https://docs.python.org/3/library/os.html
 
 # for Linux:
@@ -47,6 +51,7 @@ if gbOSLinux:
     gsAliveFilename = "/tmp/ipwatch"
     from plyer import notification      # https://plyer.readthedocs.io/en/latest/#
     # and do "pip install plyer"
+    import socket
 
 # for Windows 10:
 if gbOSWindows:
@@ -73,6 +78,8 @@ gsConnectionState = 'none'    # none or 'rejected by site' or connected
 gsOldIPAddress = 'start'    # start or 'internal error' or 'no network connection' or connected'
 
 gnSleep = 0
+
+gnNextSiteIndex = 0
 
 
 #--------------------------------------------------------------------------------------------------
@@ -114,19 +121,19 @@ def GetIPAddressViaDNS():
             print('Nameserver gave no answer')
             sIPAddress = 'connected'
             gsConnectionState = 'rejected by site'
-            gnSleep = 60
+            gnSleep = 120
         else:
             sIPAddress = str(objResolverAnswer.response.answer[0].items[0])
             gsConnectionState = 'connected'
             if sIPAddress.startswith(gsIPAddressStartNoVPN):
-                gnSleep = 60
+                gnSleep = 30
             else:
                 gnSleep = 120
     except exception as objE:
         print('exception "'+str(objE)+'"')
         sIPAddress = 'no network connection'
         gsConnectionState = 'none'
-        gnSleep = 1
+        gnSleep = 1     # while accesses are not getting out at all, try frequently
     finally:
         #print('sIPAddress "'+sIPAddress+'"')
         return sIPAddress
@@ -138,6 +145,7 @@ def GetIPAddressViaHTTP():
 
     global gsConnectionState
     global gnSleep
+    global gnNextSiteIndex
 
     arrsSites = [                   # first item index == 0
         'http://ifconfig.me/ip',    # asks that you rate-limit to 1/minute
@@ -160,27 +168,32 @@ def GetIPAddressViaHTTP():
     gnSleep = 1
     try:
         # some services (ifconfig) ask that you rate-limit to 1/minute
-        sSite = arrsSites[0]
+        sSite = arrsSites[gnNextSiteIndex]
+        gnNextSiteIndex = gnNextSiteIndex + 1
+        if gnNextSiteIndex >= len(arrsSites):
+            gnNextSiteIndex = 0
+        # https://realpython.com/python-requests/
         # objRequest = requests.get(sSite, { 'User-Agent': 'Mozilla/5.0' })
-        objRequest = requests.get(sSite)
+        #print('do requests.get("'+sSite+'")')
+        objRequest = requests.get(sSite, timeout=(1,1))     # 1 second to connect, 1 second to get data
         # print('headers "%s"' % objRequest.headers)
         if objRequest.status_code > 200:
             print('Site '+sSite+' gave HTTP status'+str(objRequest.status_code)+' content "'+objRequest.content.decode('ascii')+'"')
             sIPAddress = 'connected'
             gsConnectionState = 'rejected by site'
-            gnSleep = 60
+            gnSleep = 2
         else:
             sIPAddress = objRequest.content.decode('ascii').strip()
             gsConnectionState = 'connected'
             if sIPAddress.startswith(gsIPAddressStartNoVPN):
-                gnSleep = 60
+                gnSleep = 10
             else:
                 gnSleep = 120
     except requests.exceptions.RequestException as objE:
         # print('request exception "'+str(objE)+'"')
         sIPAddress = 'no network connection'
         gsConnectionState = 'none'
-        gnSleep = 1
+        gnSleep = 1     # while accesses are not getting out at all, try frequently
     except exception as objE:
         print('exception "'+str(objE)+'"')
         gnSleep = 60
@@ -280,6 +293,10 @@ def handler(signum, frame):
     return
 
 
+def iptoint(ip):
+    return int(socket.inet_aton(ip).encode('hex'),16)
+
+
 #--------------------------------------------------------------------------------------------------
 
 if __name__ == '__main__':
@@ -293,10 +310,23 @@ if __name__ == '__main__':
 
     if gbOSLinux:
         # Not sure why this is needed, but it is, otherwise signal will make process exit.
-        signal.signal(signal.SIGUSR1, handler)
+        #signal.signal(signal.SIGUSR1, handler)
+
+        # unfortunately AF_NETLINK is not available on Windows
+        objSocket = socket.socket(socket.AF_NETLINK, socket.SOCK_RAW, socket.NETLINK_ROUTE)
+        #print('os.getpid '+str(os.getpid()))
+        #print('os.getaddrinfo '+str(socket.getaddrinfo(None,1)))
+        objSocket.bind((os.getpid(), 1))       # works but slow
+        #objSocket.bind((0, 1))       # works but slow
+        #objSocket.bind((0, 0))          # doesn't work, no msgs
+        #objSocket.bind((0, 31))       # works but slow
+        #objSocket.bind((os.getpid(), 31))       # works but slow
+        #objSocket.bind((int(ipaddress.IPv4Address("192.168.0.1")), 1))       # works but slow
+        #objSocket.bind((int(ipaddress.IPv4Address("192.168.0.159")), 1))       # works but slow
+
         # Create file to tell ipwatchnetup that it can send signals to us now.
         # If we allowed it to send signal before this point, a signal would make this app exit.
-        fileAlive = open(gsAliveFilename, 'w+')
+        #fileAlive = open(gsAliveFilename, 'w+')
 
     while True:
 
@@ -307,24 +337,37 @@ if __name__ == '__main__':
             gsOldIPAddress = sNewIPAddress
 
         try:
-            #print('sleep for '+str(gnSleep))
-            # SIGUSR1 == 10 in major archs
-            # pkill --signal SIGUSR1 -f ipwatch.py
             if gbOSLinux:
-                objSignal = signal.sigtimedwait({signal.SIGUSR1}, gnSleep)
+                # SIGUSR1 == 10 in major archs
+                # pkill --signal SIGUSR1 -f ipwatch.py
+                #objSignal = signal.sigtimedwait({signal.SIGUSR1}, gnSleep)
                 #if objSignal == None:
                 #   print('sleep timed out')
                 #else:
                 #   print('received signal '+str(objSignal.si_signo))
+
+                # http://man7.org/linux/man-pages/man7/netlink.7.html
+                # https://docs.python.org/3/library/socket.html
+                # https://gist.github.com/Lukasa/6209575d588f1584c374
+                try:
+                    objSocket.settimeout(gnSleep)
+                    #print('about to socket.recv with timeout of '+str(gnSleep))
+                    objData = objSocket.recv(10)    # rest of data will be discarded
+                    #print('data "'+str(objData)+'"')
+                except OSError as objE:
+                    #print('exception "'+str(objE)+'"')
+                    i = 1       # placeholder
+
             if gbOSWindows:
                 time.sleep(gnSleep)
         except KeyboardInterrupt:
-            if gbOSLinux:
-                fileAlive.close()
-                try:
-                    os.remove(gsAliveFilename)
-                except:
-                    i = 1   # placeholder
+            #if gbOSLinux:
+            #    fileAlive.close()
+            #    try:
+            #        os.remove(gsAliveFilename)
+            #    except:
+            #        i = 1   # placeholder
+            objSocket.close()
             sys.exit()
         #except InterruptedError as objE:
             #print('sigtimedwait exception "'+str(objE)+'"')
