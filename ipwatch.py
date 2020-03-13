@@ -11,9 +11,6 @@
 # on Linux, to see if app is running in background:
 #   sudo ps -ax | grep ipwatch
 
-# There's a lot of commented-out code in here, because I tried various methods of
-# polling and signals and such before getting to the final (well, latest) state.
-
 # Copyright Bill Dietrich 2020
 
 
@@ -25,7 +22,7 @@ gbOSLinux = True
 
 gsAccessType = 'HTTP'         # HTTP or DNS
 
-gsUIChoice = 'notification'   # one or more of: notification syslog stdout
+gsUIChoice = 'stdout'   # one or more of: notification syslog stdout
 
 # If VPN is down and we're leaking, IP address will start with this.
 # In that case, poll a little faster.
@@ -39,19 +36,17 @@ gbOSWindows = not gbOSLinux
 
 #import subprocess
 import sys
-#import signal       # https://docs.python.org/3/library/signal.html
 import time         # https://www.cyberciti.biz/faq/howto-get-current-date-time-in-python/
 import requests
 import ipaddress
 import os           # https://docs.python.org/3/library/os.html
+import socket
 
 # for Linux:
 if gbOSLinux:
     import syslog       # https://docs.python.org/2/library/syslog.html
-    gsAliveFilename = "/tmp/ipwatch"
     from plyer import notification      # https://plyer.readthedocs.io/en/latest/#
-    # and do "pip install plyer"
-    import socket
+    # and do "pip3 install plyer"
 
 # for Windows 10:
 if gbOSWindows:
@@ -232,30 +227,15 @@ def ReportChange(sNewIPAddress):
 
     if 'notification' in gsUIChoice:
 
-        # for Linux Mint, no installation needed, Zenity is installed by default.
-
-        # For Win10, https://github.com/maravento/winzenity
-        # Download https://github.com/maravento/winzenity/raw/master/zenity.zip
-        # and copy the EXE file inside it to the same folder where ipwatch.py is located..
-
-        # https://www.linux.org/threads/zenity-gui-for-shell-scripts.9802/
-        # https://en.wikipedia.org/wiki/Zenity
+        # https://plyer.readthedocs.io/en/latest/#
+        # https://github.com/kivy/plyer
+        # no way to have notification remain permanently
 
         if gbOSLinux:
-            # do a (non-modal) notification, so no wait for user action
-            #subprocess.call(['zenity','--notification','--text',sMsg])
-            # on Linux, see output as notifications in system tray
-            
-            # plyer works a little better, IMO: notifications appear both on desktop (briefly) and in tray
+            # notifications appear both on desktop (briefly) and in tray
             notification.notify(title='IP address changed', message=sMsg, app_name='ipwatch', timeout=8*60*60)
 
         if gbOSWindows:
-            # only modal-dialog choices are available with WinZenity
-            # open a modal dialog, so no more checking until user sees the dialog and closes it
-            #subprocess.call(['zenity','--info','--text',sMsg])
-
-            # https://plyer.readthedocs.io/en/latest/#
-            # https://github.com/kivy/plyer
             notification.notify(title='IP address changed', message=sMsg, app_name='ipwatch', timeout=8*60*60)
 
     if 'syslog' in gsUIChoice:
@@ -285,34 +265,21 @@ def ReportChange(sNewIPAddress):
 
 
 #--------------------------------------------------------------------------------------------------
-# Not sure why this is needed, but it is, otherwise signal will make process exit.
-# And sometimes this is not called, even though the signal came in to the main loop.
-
-def handler(signum, frame):
-    #print('Signal handler called with signal', signum)
-    return
 
 
-def iptoint(ip):
-    return int(socket.inet_aton(ip).encode('hex'),16)
+#def iptoint(ip):
+#    return int(socket.inet_aton(ip).encode('hex'),16)
 
 
 #--------------------------------------------------------------------------------------------------
 
 if __name__ == '__main__':
-
-    #if argv is None:
-    #    argv = sys.argv
-    #if len(argv) < 2:
-    #    monitor_frequency = 3600
-    #else:
-    #    monitor_frequency = argv[1]
+    
+    # unfortunately AF_NETLINK is not available on Windows
+    #print('getattr(AF_NETLINK) == '+str(getattr(socket, 'AF_NETLINK', None)))
 
     if gbOSLinux:
-        # Not sure why this is needed, but it is, otherwise signal will make process exit.
-        #signal.signal(signal.SIGUSR1, handler)
 
-        # unfortunately AF_NETLINK is not available on Windows
         objSocket = socket.socket(socket.AF_NETLINK, socket.SOCK_RAW, socket.NETLINK_ROUTE)
         #print('os.getpid '+str(os.getpid()))
         #print('os.getaddrinfo '+str(socket.getaddrinfo(None,1)))
@@ -324,10 +291,6 @@ if __name__ == '__main__':
         #objSocket.bind((int(ipaddress.IPv4Address("192.168.0.1")), 1))       # works but slow
         #objSocket.bind((int(ipaddress.IPv4Address("192.168.0.159")), 1))       # works but slow
 
-        # Create file to tell ipwatchnetup that it can send signals to us now.
-        # If we allowed it to send signal before this point, a signal would make this app exit.
-        #fileAlive = open(gsAliveFilename, 'w+')
-
     while True:
 
         sNewIPAddress = GetAddress()
@@ -337,14 +300,8 @@ if __name__ == '__main__':
             gsOldIPAddress = sNewIPAddress
 
         try:
+
             if gbOSLinux:
-                # SIGUSR1 == 10 in major archs
-                # pkill --signal SIGUSR1 -f ipwatch.py
-                #objSignal = signal.sigtimedwait({signal.SIGUSR1}, gnSleep)
-                #if objSignal == None:
-                #   print('sleep timed out')
-                #else:
-                #   print('received signal '+str(objSignal.si_signo))
 
                 # http://man7.org/linux/man-pages/man7/netlink.7.html
                 # https://docs.python.org/3/library/socket.html
@@ -360,14 +317,10 @@ if __name__ == '__main__':
 
             if gbOSWindows:
                 time.sleep(gnSleep)
+
         except KeyboardInterrupt:
-            #if gbOSLinux:
-            #    fileAlive.close()
-            #    try:
-            #        os.remove(gsAliveFilename)
-            #    except:
-            #        i = 1   # placeholder
-            objSocket.close()
+            if gbOSLinux:
+                objSocket.close()
             sys.exit()
         #except InterruptedError as objE:
             #print('sigtimedwait exception "'+str(objE)+'"')
