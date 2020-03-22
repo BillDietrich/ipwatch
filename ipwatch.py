@@ -18,11 +18,9 @@
 
 # edit these to change the behavior of the app
 
-gbOSLinux = True
-
 gsAccessType = 'HTTP'         # HTTP or DNS
 
-gsUIChoice = 'stdout'   # one or more of: notification syslog stdout
+gsUIChoice = 'notification'   # one or more of: notification syslog stdout
 
 # If VPN is down and we're leaking, IP address will start with this.
 # In that case, poll a little faster.
@@ -32,15 +30,17 @@ gsIPAddressStartNoVPN = 'zzz.'
 
 #--------------------------------------------------------------------------------------------------
 
-gbOSWindows = not gbOSLinux
-
 #import subprocess
 import sys
+import platform
 import time         # https://www.cyberciti.biz/faq/howto-get-current-date-time-in-python/
 import requests
 import ipaddress
 import os           # https://docs.python.org/3/library/os.html
 import socket
+
+gbOSLinux = (platform.system() == "Linux")
+gbOSWindows = (platform.system() == "Windows")
 
 # for Linux:
 if gbOSLinux:

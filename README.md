@@ -56,14 +56,6 @@ With Python installed:
 2. pip install pywin32
 3. pip install plyer
 
-### Edit ipwatch.py
-#### On Linux
-No edits needed in ipwatch.py
-
-#### On Windows 10
-Edit ipwatch.py to:
-* Change the line "gbOSLinux = True" to "gbOSLinux = False".
-
 ---
 
 ## Quick-start to try ipwatch: run it manually
@@ -218,7 +210,6 @@ Edit ipwatch.py, function GetIPAddressViaHTTP, array arrsSites to see and change
 * Can't guarantee that quick, transient changes in the public IP address will be detected.  So it really can't give 100% assurance that there is no IP leak caused by brief faults in the VPN.
 
 ## To-Do
-* Automatically detect OS type.
 * Any way to stop polling on Win10 ?
 * Spin off threads so we don't miss any changes ?
 * In Linux with VPN, when you unplug the Ethernet cable, the socket notifies right away.  But then trying to fetch the IP address takes a long time (8-10 seconds) to time out, even with a short timeout specified in the app.  Not sure if the delay is in the VPN or somewhere else.  So the app feels very slow.  Not sure if it happens in other configurations too.
