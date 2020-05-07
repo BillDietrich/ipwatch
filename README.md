@@ -3,7 +3,7 @@ Reports when your system's public IP address changes.
 
 Intended to reveal when your VPN is up or down, so you can have some confidence that it's actually working.
 
-Tested only on Linux Mint 19 and Windows 10 Home.
+Tested only on Linux Mint 19, Ubuntu 20.04 desktop GNOME, and Windows 10 Home.
 
 https://github.com/BillDietrich/ipwatch
 
@@ -30,7 +30,7 @@ python3 --version
 # If it's not installed:
 # On Debian-type Linux:
 sudo apt-get update
-sudo apt-get install python3
+sudo apt-get install python3 python3-pip
 
 # After python is installed:
 pip3 install plyer
@@ -97,7 +97,7 @@ You will see reports in the system log:
 
 For Linux, to see output, on command-line do
 ```bash
-sudo journalctl | grep ipwatch
+sudo journalctl | grep ipwatch.py
 ```
 
 For Win10, to see output, run Event Viewer application.  Look in administrative events from Applications, and look for events with Origin "ipwatch".
@@ -128,11 +128,16 @@ Then try steps in the "Testing" section, below.
 sudo cp ipwatch.py /usr/local/bin		# you may have done this already
 sudo edit /usr/local/bin/ipwatch.py		# to set gsUIChoice to "syslog".
 sudo cp ipwatch.service /etc/systemd/system
+sudo -H pip3 install plyer
+sudo systemctl enable ipwatch.service
+sudo systemctl start ipwatch.service
 ```
 
-After rebooting, on command-line do
+On command-line do
 ```bash
-sudo journalctl | grep ipwatch
+sudo journalctl --since=today | grep ipwatch.py
+# or:
+sudo journalctl | grep ipwatch.py
 ```
 Then try steps in the "Testing" section, below, and check the journal again.
 
@@ -196,13 +201,16 @@ Edit ipwatch.py, function GetIPAddressViaHTTP, array arrsSites to see and change
 
 [Would be nice to have a VPN test server that went up and down regularly, so we could test that situation.]
 
+If on Linux you copy ipwatch.py to /usr/local/bin and then edit original or copy, you can get a bit confused.  Running "./ipwatch.py" runs the original in the current directory, while running "ipwatch.py" runs the copy in /usr/local/bin.
+
 ---
 
 ## Limitations
 * Does polling on Windows.  Can't poll too frequently, or else it would slow down the system and maybe violate TOS on the web site that it fetches the IP address from.  So it's possible to miss brief, transient changes.  And a change of address may be reported as much as 60 or 120 seconds after it actually happens.
-* Tested only on Linux Mint 19.3 Cinnamon with 5.3 kernel, and Windows 10 Home.
+* Tested only on Linux Mint 19.3 Cinnamon with 5.3 kernel, Ubuntu 20.04 desktop GNOME with 5.4 kernel, and Windows 10 Home.
 * Tested only with IPv4, not IPv6.
-* On Linux, tested only with strongSwan/IPsec to Windscribe VPN.
+* On Linux Mint, tested only with strongSwan/IPsec/IKEv2 to Windscribe VPN.
+* On Ubuntu, tested with OpenVPN to Windscribe VPN, and with strongSwan/IPsec/IKEv2 to Windscribe VPN.
 * On Win10, tested only without VPN.
 * Not tested on a LAN with no internet access.
 * Requires Python 3.3 or greater.
